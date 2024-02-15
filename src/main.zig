@@ -8,14 +8,14 @@ pub const ArenaAllocator = struct {
 
     pub fn init(child_allocator: std.mem.Allocator, init_capacity: usize) !ArenaAllocator {
         return ArenaAllocator{
-            .ptr = try child_allocator.alloc(u8, init_capacity),
+            .ptr = child_allocator.rawAlloc(init_capacity, 8, @returnAddress()) orelse return error.OutOfMemory,
             .this_capacity = init_capacity,
             .this_allocator = child_allocator,
         };
     }
 
     pub fn deinit(self: *ArenaAllocator) void {
-        self.this_allocator.free(self.this_allocator, self.ptr);
+        self.this_allocator.rawFree(self.ptr);
     }
 
     pub fn alloc(ctx: *anyopaque, len: usize, ptr_align: u8, ret_addr: usize) ?[*]u8 {
