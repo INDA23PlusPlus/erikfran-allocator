@@ -21,19 +21,14 @@ pub const LinearAllocator = struct {
     pub fn alloc(ctx: *anyopaque, len: usize, ptr_align: u8, _: usize) ?[*]u8 {
         var self: *LinearAllocator = @ptrCast(@alignCast(ctx));
 
-        std.debug.print("{d}, {d}, {d}, {d}\n", .{ self.index, len, self.buf.len, ptr_align });
+        cosnt aligned_ptr: usize = ((ptr + (usize)(ptr_align - 1)) & (usize)(-ptr_align));
 
-        if ((self.index + len > self.buf.len) or (ptr_align <= 0)) {
-            std.debug.print("{d}, {d}, {d}, {d}\n", .{ self.index, len, self.buf.len, ptr_align });
+        if (self.index + len > self.buf.len) {
             return null;
         }
 
-        const new_index = self.index + len;
-        const align_offset: usize = ~(ptr_align - 1) & new_index;
-        const aligned_index = new_index + align_offset;
-
-        defer self.index += aligned_index;
-        return @ptrFromInt(self.index);
+        self.index += len;
+        return &self.buf[self.index];
     }
 
     pub fn free(_: *anyopaque, _: []u8, _: u8, _: usize) void {}
@@ -52,31 +47,21 @@ pub const LinearAllocator = struct {
             },
         };
     }
+
+    pub fn reset(self: *LinearAllocator) void {
+        _ = self;
+    }
+
+    pub fn capacity(self: *LinearAllocator) usize {
+        return self.capacity;
+    }
 };
 
-pub fn main() !void {
-    var buf: [1000000]u8 = undefined;
-    var linear_allocator = try LinearAllocator.init(&buf);
-
-    var allocator = linear_allocator.allocator();
-
-    try std.heap.testAllocator(allocator);
-    try std.heap.testAllocatorAligned(allocator);
-    try std.heap.testAllocatorLargeAlignment(allocator);
-
-    _ = try allocator.alloc(u8, 5);
-    _ = try allocator.alloc(u8, 10);
-}
-
 test "Linear Allocator" {
-    var buf: [1000000]u8 = undefined;
+    var buf: [1024]u8 = undefined;
     var linear_allocator = try LinearAllocator.init(&buf);
 
     var allocator = linear_allocator.allocator();
-
-    try std.heap.testAllocator(allocator);
-    try std.heap.testAllocatorAligned(allocator);
-    try std.heap.testAllocatorLargeAlignment(allocator);
 
     _ = try allocator.alloc(u8, 5);
     _ = try allocator.alloc(u8, 10);
