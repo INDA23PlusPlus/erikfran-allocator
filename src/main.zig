@@ -28,8 +28,9 @@ pub const LinearAllocator = struct {
             return null;
         }
 
+        const alignment: usize = @as(usize, 1) << @truncate(ptr_align);
         const new_index = self.index + len;
-        const align_offset: usize = ~(ptr_align - 1) & new_index;
+        const align_offset: usize = ~(alignment - 1) & new_index;
         const aligned_index = new_index + align_offset;
 
         defer self.index += aligned_index;
